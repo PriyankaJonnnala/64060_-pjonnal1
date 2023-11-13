@@ -1,0 +1,144 @@
+---
+title: "FML Assignment4"
+author: "Priyanka Jonnala"
+date: "2023-11-12"
+output:
+  word_document: default
+  pdf_document: default
+  html_document: default
+---
+Loading the required packages
+```{r}
+library(flexclust)
+library(cluster)
+library(ggcorrplot)
+```
+Importing the dataset
+```{r}
+Pharmaceuticals <- read.csv("C:\\Users\\priya\\OneDrive\\Desktop\\FML\\Assignment 4\\Pharmaceuticals.csv")
+head(Pharmaceuticals)
+```
+Choose columns 3 to 11 and store the resulting data frame in Pharma1
+```{r}
+Pharma <- na.omit(Pharmaceuticals)
+Pharma
+Pharma1 <- Pharma[,3:11]
+# Displaying the top six rows of Pharma1 using head function
+head(Pharma1)
+# Printing summary statistics for Pharma1
+summary(Pharma1)
+```
+
+```{r}
+library(factoextra)
+```
+Normalizing the data with scale method
+```{r}
+Pharma2 <- scale(Pharma1)
+# Set row names to match the first column of the original Pharma data
+row.names(Pharma2) <- Pharma[,1]
+# Calculate the distance matrix using get_dist
+distance <- get_dist(Pharma2)
+# Visualize the distance matrix using fviz_dist
+fviz_dist(distance)
+```
+
+```{r}
+# Set the random seed for reproducibility
+set.seed(10)
+# Use a for loop to calculate the within-cluster sum of squares (wss) for 1 to 10 clusters
+wss <- vector()
+for(i in 1:10) wss[i] <- sum(kmeans(Pharma2,i)$withinss)
+# Visualize the wss values using a line plot
+plot(1:10, wss , type = "b" , main = paste('Cluster of Companies') , xlab =
+"Number of Clusters", ylab="wss")
+# Print the wss values for each number of clusters
+wss
+```
+Silhouette Approach
+```{r}
+# Use the fviz_nbclust function to determine the optimal number of clusters using the silhouette method
+fviz_nbclust(Pharma2, kmeans, method = "silhouette")
+```
+This demonstrates that five clusters are the optimum number. Using the k-means method to create a 5 cluster.
+```{r}
+# Use the kmeans function to create 5 clusters and visualize the results using the fviz_cluster function
+set.seed(21)
+clusterx <- kmeans(Pharma2, centers = 5, nstart = 25) # k = 5, number of restarts = 25
+clusterx$centers
+clusterx$size
+fviz_cluster(clusterx, data = Pharma2)
+```
+Manhattan Distance when using Kmeans Clustering.
+```{r}
+set.seed(21)
+# Use kcca function to create 5 clusters with Manhattan distance and k-medians algorithm
+clusterY <- kcca(Pharma2, k = 5, kccaFamily("kmedians"))
+# Print the results and visualize the clusters
+clusterY
+clusters_index <- predict(clusterY)
+dist(clusterY@centers)
+image(clusterY)
+points(Pharma2, col = clusters_index, pch = 19, cex = 0.3)
+```
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+Pharma1 %>% mutate(Cluster = clusterx$cluster) %>% group_by(Cluster) %>% summarise_all("mean")
+clusplot(Pharma2,clusterx$cluster, main="Clusters",color = TRUE,shade = TRUE, labels = 2,lines = 0)
+```
+Companies are classified into different clusters as follows
+
+Cluster1 : AHM,WYE,BMY,AZN,LLY,ABT,NVS,ABT and SGP
+
+Cluster2 : AGN,PHA
+
+Cluster3 : BAY,CHTT,IVX
+
+Cluster4 : ELN,MRX,WPI,AVE
+
+Cluster5 : JNJ,MRK,PFE,GSK
+
+From the means of the cluster variables, it can be derived as follow:
+
+Cluster1 has a medium risk
+
+Cluster2 has very high PE Ratio
+
+Cluster3 Despite having an excellent PE ratio, it is incredibly risky to own due to its extremely high risk, extremely high leverage, and poor Net Profit margin. Also very low in revenue growth.
+
+Cluster4 has the best Net Profit Margin, the lowest PE ratio, and the fastest sales growth. It can be bought or kept on hand as a reserve.
+
+Cluster5 has strong market capitalization, ROI, ROA, ROA on assets, ROA on turnover of assets, and ROA on net profit margin. A low PE ratio indicates that the stock price is moderately valued and may thus be bought and kept. Revenue growth of 18.5% is also favorable.
+
+Examining patterns by visualizing clusters against the variables
+```{r}
+Pharma3 <- Pharma[12:14] %>% mutate(Clusters=clusterx$cluster)
+ggplot(Pharma3, mapping = aes(factor(Clusters), fill =Median_Recommendation)) +
+ geom_bar(position='dodge') + labs(x ='Clusters')
+```
+
+```{r}
+ggplot(Pharma3, mapping = aes(factor(Clusters),fill = Location)) +
+ geom_bar(position = 'dodge') + labs(x ='Clusters')
+```
+
+```{r}
+ggplot(Pharma3, mapping = aes(factor(Clusters),fill = Exchange)) +
+ geom_bar(position = 'dodge') + labs(x ='Clusters')
+```
+
+Provide an appropriate name for each cluster using any or all of the variables in the data set.
+
+Cluster1: Attempt it Cluster 
+
+Cluster2: Significant Risk Cluster
+
+Cluster3: Very Dangerous Cluster
+
+Cluster4: Top Buying Cluster
+
+Cluster5: A Perfect Asset
